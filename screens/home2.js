@@ -1,3 +1,4 @@
+/*
 import React from "react";
 import {
   StyleSheet,
@@ -74,23 +75,30 @@ export default class Home extends React.Component {
       StatusBar.setBarStyle("light-content", true);
       StatusBar.setBackgroundColor("black");
     }
-    /*
+
     if (await DeviceMotion.isAvailableAsync()) {
       DeviceMotion.addListener((motionData) => {
-        // console.log(motionData);
+        console.log(motionData);
       });
     }
-    */
   }
+
+  subscribe = () => {
+    this.subscription = DeviceMotion.addListener((motionData) => {
+      this.setState({ motionData });
+      console.log(motionData);
+    });
+  };
 
   takePic = async () => {
     var widthVal = this.state.currentWidth;
+    this.setState({ message: "CLICK" });
     this.camera
       .takePictureAsync({ quality: 0.5, skipProcessing: false })
       .then((data) => {
         // this.camera.pausePreview();
         var stateImages = this.state.images;
-        /*
+
         if (this.state.type === Camera.Constants.Type.front) {
           ImageManipulator.manipulateAsync(
             data.uri,
@@ -106,15 +114,14 @@ export default class Home extends React.Component {
         } else {
           stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
         }
-        */
 
-        stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
         stateImages.sort((a, b) =>
           a.value < b.value ? 1 : b.value < a.value ? -1 : 0
         );
 
         this.setState({
           images: stateImages,
+          message: "",
         });
       });
   };
@@ -280,56 +287,46 @@ export default class Home extends React.Component {
       if (!picTaken && images.length < 10) {
         return (
           <SafeAreaView style={styles.container}>
-            <TouchableOpacity
-              onPress={() => this.takePic()}
-              onLongPress={() => {
-                console.log("this");
+            <Camera
+              style={styles.camera}
+              type={this.state.type}
+              ratio="16:9"
+              pictureSize="16:9"
+              flashMode={Camera.Constants.FlashMode.auto}
+              autoFocus={Camera.Constants.AutoFocus.on}
+              onFacesDetected={this.handleFacesDetected}
+              faceDetectorSettings={{
+                mode: FaceDetector.Constants.Mode.fast,
+                detectLandmarks: FaceDetector.Constants.Landmarks.all,
+                runClassifications: FaceDetector.Constants.Classifications.all,
+                tracking: true,
+              }}
+              ref={(ref) => {
+                this.camera = ref;
               }}
             >
-              <Camera
-                style={styles.camera}
-                type={this.state.type}
-                ratio="16:9"
-                pictureSize="16:9"
-                flashMode={Camera.Constants.FlashMode.auto}
-                autoFocus={Camera.Constants.AutoFocus.on}
-                onFacesDetected={this.handleFacesDetected}
-                faceDetectorSettings={{
-                  mode: FaceDetector.Constants.Mode.fast,
-                  detectLandmarks: FaceDetector.Constants.Landmarks.all,
-                  runClassifications:
-                    FaceDetector.Constants.Classifications.all,
-                  tracking: true,
-                }}
-                ref={(ref) => {
-                  this.camera = ref;
-                }}
-              >
-                <View>
-                  <View style={styles.colContainer}>
-                    <View style={styles.col}></View>
-                    <View style={styles.col}></View>
-                  </View>
-
-                  <View style={styles.row}></View>
-                  <View style={styles.row}></View>
+              <View>
+                <View style={styles.colContainer}>
+                  <View style={styles.col}></View>
+                  <View style={styles.col}></View>
                 </View>
 
-                {message !== "" ? (
-                  <Badge style={styles.greyBadge}>
-                    <Text style={{ color: "white", fontSize: 20 }}>
-                      {message}
-                    </Text>
-                  </Badge>
-                ) : (
-                  <View></View>
-                )}
+                <View style={styles.row}></View>
+                <View style={styles.row}></View>
+              </View>
 
-                {this.renderRating()}
+              {message !== "" ? (
+                <Badge style={styles.greyBadge}>
+                  <Text style={{ color: "white", fontSize: 20 }}>
+                    {message}
+                  </Text>
+                </Badge>
+              ) : (
+                <View></View>
+              )}
 
-                {isClicked ? <View style={styles.overlay}></View> : <View />}
-              </Camera>
-            </TouchableOpacity>
+              {this.renderRating()}
+            </Camera>
 
             <View style={styles.actions}>
               <TouchableOpacity
@@ -339,34 +336,12 @@ export default class Home extends React.Component {
                 <FontAwesome name="camera" size={25} style={styles.icon} />
               </TouchableOpacity>
 
-              <View style={{ justifyContent: "center", alignItems: "center" }}>
-                <Badge
-                  primary
-                  style={{
-                    alignSelf: "center",
-                  }}
-                >
-                  <Text style={{ color: "white" }}>Tap Screen to Click</Text>
-                </Badge>
-                <Badge
-                  info
-                  style={{
-                    alignSelf: "center",
-                    marginTop: (deviceHeight - height) * 0.1,
-                  }}
-                >
-                  <Text style={{ color: "white" }}>Hold Screen for Burst</Text>
-                </Badge>
-              </View>
-
-              {/*
               <TouchableOpacity
                 style={styles.btn}
                 onPress={() => this.takePic()}
               >
                 <Entypo name="circle" size={40} style={styles.icon} />
               </TouchableOpacity>
-*/}
               <TouchableOpacity
                 style={styles.btn}
                 onPress={() => this.displayMode()}

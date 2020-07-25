@@ -2826,6 +2826,18 @@ expo-screen-orientation@~1.1.1:
   dependencies:
     fbjs "1.0.0"
 
+expo-sensors@~9.0.1:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/expo-sensors/-/expo-sensors-9.0.1.tgz#dcaccf0c6b1d6db2283150439482315e41060778"
+  integrity sha512-dsMCehc9YVW+41AysFLsx5Ikyg/Dul13e+j5JiZnHLTbJucBR3UiBE+zh10KdhYG/qORZhBmYYt4OYOhvlxmbA==
+  dependencies:
+    invariant "^2.2.4"
+
+expo-sharing@~8.2.1:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/expo-sharing/-/expo-sharing-8.2.1.tgz#2d517e39d88603fcd154a3da00c8d26559840f42"
+  integrity sha512-jEMi7OAEyOokrAEsyHgjjgO+Js1BjilvxVpqVRwk8ywxpVwNya07RmC+8XOBTvITvIxNGQ8jq87Rt3IEdqYYjQ==
+
 expo-splash-screen@^0.3.1:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/expo-splash-screen/-/expo-splash-screen-0.3.1.tgz#4dd79d9d1ab8135281f7cc5889a68e3003223f37"

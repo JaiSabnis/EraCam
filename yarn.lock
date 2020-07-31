@@ -2748,6 +2748,18 @@ expo-file-system@~9.0.1:
   dependencies:
     uuid "^3.4.0"
 
+expo-firebase-analytics@~2.4.1:
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/expo-firebase-analytics/-/expo-firebase-analytics-2.4.1.tgz#cb8d96fd91583271aba36e0edce7e2eadea5dec3"
+  integrity sha512-Z9bYDHoqu0lRT1vG5d6vjQe/Wg9ioSWtJ4uHRJBX0kojQNB4ONuO/OCAeiJoDfwfId11bPeslGlnR2P6fh8zGA==
+  dependencies:
+    expo-firebase-core "~1.1.1"
+
+expo-firebase-core@~1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/expo-firebase-core/-/expo-firebase-core-1.1.1.tgz#9ee4b0118a5528c683ff5a676ee2594438e3f3b0"
+  integrity sha512-FCf9IsX30vLeMhIk/+QYZP6iRC4SVP3nite1CqjhL/pnDY0pFqHAfA4e5KKJQUaWw1nbtaHVlBcud/Zyaeu6xg==
+
 expo-font@~8.2.1:
   version "8.2.1"
   resolved "https://registry.yarnpkg.com/expo-font/-/expo-font-8.2.1.tgz#82f9d7f3e96a0ea4376e573b126379aa754ea807"
@@ -5303,6 +5315,13 @@ react-native-screens@^2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/react-native-screens/-/react-native-screens-2.9.0.tgz#ead2843107ba00fee259aa377582e457c74f1f3b"
   integrity sha512-5MaiUD6HA3nzY3JbVI8l3V7pKedtxQF3d8qktTVI0WmWXTI4QzqOU8r8fPVvfKo3MhOXwhWBjr+kQ7DZaIQQeg==
+
+react-native-switch-selector@^2.0.6:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/react-native-switch-selector/-/react-native-switch-selector-2.0.6.tgz#e21cf77b8c8596a83e455b54b06f60a1267e26c3"
+  integrity sha512-noBFzh5QMf3Jp/B+kg0uLmbBPID5y9bhTpZ577ZabV3p5eErSTdYSmZHqvn0XCXPraBUDKAC73/0L4ttMv+rOQ==
+  dependencies:
+    prop-types "^15.7.2"
 
 react-native-unimodules@^0.7.0:
   version "0.7.0"

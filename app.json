@@ -18,9 +18,6 @@
       "bundleIdentifier": "com.zuro.era",
       "buildNumber": "1.0.0"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "android": {
       "package": "com.zuro.era",
       "versionCode": 1

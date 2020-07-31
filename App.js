@@ -40,7 +40,6 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as Sharing from "expo-sharing";
 import { DeviceMotion } from "expo-sensors";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const width = Dimensions.get("window").width;
 const deviceHeight = Dimensions.get("window").height;
@@ -62,6 +61,13 @@ export default class App extends React.Component {
       images: [],
       isClicked: false,
     };
+    /*
+    imageSort(){
+      return images.sort((a, b) =>
+      a.value < b.value ? 1 : b.value < a.value ? -1 : 0
+    );
+    }
+    */
   }
 
   async componentDidMount() {
@@ -79,7 +85,7 @@ export default class App extends React.Component {
     /*
     if (await DeviceMotion.isAvailableAsync()) {
       DeviceMotion.addListener((motionData) => {
-        // console.log(motionData);
+        console.log(motionData);
       });
     }
     */
@@ -88,32 +94,11 @@ export default class App extends React.Component {
   takePic = async () => {
     var widthVal = this.state.currentWidth;
     this.camera
-      .takePictureAsync({ quality: 0.5, skipProcessing: false })
+      .takePictureAsync({ quality: 0.4, skipProcessing: false })
       .then((data) => {
         // this.camera.pausePreview();
         var stateImages = this.state.images;
-        /*
-        if (this.state.type === Camera.Constants.Type.front) {
-          ImageManipulator.manipulateAsync(
-            data.uri,
-            [{ flip: ImageManipulator.FlipType.Horizontal }],
-            { compress: 1, format: ImageManipulator.SaveFormat.PNG }
-          ).then((imageResult) => {
-            stateImages.push({
-              pic: imageResult.uri,
-              value: widthVal,
-              isSaved: false,
-            });
-          });
-        } else {
-          stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
-        }
-        */
-
         stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
-        stateImages.sort((a, b) =>
-          a.value < b.value ? 1 : b.value < a.value ? -1 : 0
-        );
 
         this.setState({
           images: stateImages,
@@ -266,12 +251,14 @@ export default class App extends React.Component {
       if (80 < this.state.currentWidth) {
         return (
           <Badge style={styles.greenBadge}>
+            <Text style={{ color: "white" }}> Angle Quality: </Text>
             <Text style={styles.angleRatingPo}>{this.state.currentWidth}</Text>
           </Badge>
         );
       } else {
         return (
           <Badge style={styles.orangeBadge}>
+            <Text style={{ color: "white" }}> Angle Quality: </Text>
             <Text style={styles.angleRatingPo}>{this.state.currentWidth}</Text>
           </Badge>
         );
@@ -291,6 +278,8 @@ export default class App extends React.Component {
       picTaken,
       images,
     } = this.state;
+
+    // images.sort((a, b) => (a.value < b.value ? 1 : b.value < a.value ? -1 : 0));
 
     if (hasPerm === null && hasMedia === null) {
       return <View />;
@@ -378,16 +367,30 @@ export default class App extends React.Component {
                 <Entypo name="circle" size={40} style={styles.icon} />
               </TouchableOpacity>
 */}
-              <TouchableOpacity
-                style={styles.btn}
-                onPress={() => this.displayMode()}
-              >
-                {images.length > 0 ? (
+
+              {images.length > 0 ? (
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={() => this.displayMode()}
+                >
                   <EvilIcons name="check" size={40} color="orange" />
-                ) : (
+                  <Text style={{ color: "white" }}>
+                    {" "}
+                    {this.state.images.length}{" "}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={() => this.displayMode()}
+                >
+                  <Text style={{ color: "white" }}>
+                    {" "}
+                    {this.state.images.length}{" "}
+                  </Text>
                   <EvilIcons name="check" size={40} color="grey" />
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              )}
             </View>
           </SafeAreaView>
         );
@@ -464,7 +467,7 @@ export default class App extends React.Component {
                         </TouchableOpacity>
                       </Body>
                       <Right>
-                        <Text>{item.value} %</Text>
+                        <Text>Angle Quality: {item.value}</Text>
                       </Right>
                     </CardItem>
                   </Card>
@@ -519,10 +522,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: height * 0.9,
     alignSelf: "flex-end",
-    height: height * 0.08,
+    height: height * 0.1,
+    width: height * 0.1,
     justifyContent: "center",
     alignItems: "center",
-    width: height * 0.08,
+    flexDirection: "column",
   },
 
   switch: {
@@ -554,10 +558,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: height * 0.9,
     alignSelf: "flex-end",
-    height: height * 0.08,
+    height: height * 0.1,
+    width: height * 0.1,
     justifyContent: "center",
     alignItems: "center",
-    width: height * 0.08,
+    flexDirection: "column",
   },
   infoBadge: {
     backgroundColor: "rgba(52, 161, 235, 0.5)",
@@ -780,3 +785,20 @@ const styles = StyleSheet.create({
   };
 
     */
+/*
+        if (this.state.type === Camera.Constants.Type.front) {
+          ImageManipulator.manipulateAsync(
+            data.uri,
+            [{ flip: ImageManipulator.FlipType.Horizontal }],
+            { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+          ).then((imageResult) => {
+            stateImages.push({
+              pic: imageResult.uri,
+              value: widthVal,
+              isSaved: false,
+            });
+          });
+        } else {
+          stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
+        }
+        */

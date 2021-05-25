@@ -48,7 +48,7 @@ const width = Dimensions.get("window").width;
 const deviceHeight = Dimensions.get("window").height;
 const height = width * (16 / 9);
 const topMargin = (deviceHeight - height) / 2;
-const shakeTolerance = 15;
+const shakeTolerance = 20;
 
 export default class Cam extends React.Component {
   constructor(props) {
@@ -63,8 +63,8 @@ export default class Cam extends React.Component {
       photo: "empty",
       picTaken: false,
       images: [],
+      showHelp: false,
       shaky: false,
-      ready: false,
     };
   }
 
@@ -80,6 +80,12 @@ export default class Cam extends React.Component {
       StatusBar.setBarStyle("light-content", true);
       StatusBar.setBackgroundColor("black");
     }
+
+    AsyncStorage.getItem("needsHelp").then((value) => {
+      if (value !== "viewed") {
+        this.setState({ showHelp: true });
+      }
+    });
 
     if (await DeviceMotion.isAvailableAsync()) {
       DeviceMotion.addListener((motionData) => {
@@ -107,6 +113,11 @@ export default class Cam extends React.Component {
       });
     }
   }
+
+  gotHelp = () => {
+    AsyncStorage.setItem("needsHelp", "viewed");
+    this.setState({ showHelp: false });
+  };
 
   takePic = async () => {
     var isShaky = this.state.shaky;
@@ -167,48 +178,47 @@ export default class Cam extends React.Component {
   };
 
   handleFacesDetected = ({ faces }) => {
-    try {
-      var allSmiles = true;
-      var shutEye = false;
-      var changePosition = false;
+    var allSmiles = true;
+    var shutEye = false;
+    var changePosition = false;
 
-      // this.setState({ message: "" });
+    // this.setState({ message: "" });
 
-      // ANGLES
-      var faceWidths = [];
-      // get faceWidths for different setups
-      for (let i = 0; i < faces.length; i++) {
-        let faceWidth =
-          faces[i].rightCheekPosition.x - faces[i].leftCheekPosition.x;
-        faceWidths.push(faceWidth);
-      }
+    // ANGLES
+    var faceWidths = [];
+    // get faceWidths for different setups
+    for (let i = 0; i < faces.length; i++) {
+      let faceWidth =
+        faces[i].rightCheekPosition.x - faces[i].leftCheekPosition.x;
+      faceWidths.push(faceWidth);
+    }
 
-      // calculations
+    // calculations
 
-      var total = 0;
-      for (var i = 0; i < faceWidths.length; i++) {
-        total += faceWidths[i];
-      }
+    var total = 0;
+    for (var i = 0; i < faceWidths.length; i++) {
+      total += faceWidths[i];
+    }
 
-      var avgWidthRound = total / faceWidths.length;
-      var avgWidth = Math.round(((600 + avgWidthRound) * 1) / 6);
+    var avgWidthRound = total / faceWidths.length;
+    var avgWidth = Math.round(((600 + avgWidthRound) * 1) / 6);
 
-      if (Number.isNaN(avgWidth) || avgWidth < 0) {
-        avgWidth = 0;
-      } else if (avgWidth > 93) {
-        avgWidth = 93;
-        this.setState({
-          message: "Your Camera might be too far!",
-        });
-      }
+    if (Number.isNaN(avgWidth) || avgWidth < 0) {
+      avgWidth = 0;
+    } else if (avgWidth > 93) {
+      avgWidth = 93;
+      this.setState({
+        message: "Your Camera might be too far!",
+      });
+    }
 
-      if (0 < avgWidth <= 100) {
-        this.setState({
-          currentWidth: avgWidth,
-        });
-      }
+    if (0 < avgWidth <= 100) {
+      this.setState({
+        currentWidth: avgWidth,
+      });
+    }
 
-      /*
+    /*
     // FACE POSITION
     for (let i = 0; i < faces.length; i++) {
       //console.log(faces[i].leftEyePosition.x);
@@ -231,12 +241,9 @@ export default class Cam extends React.Component {
     } else if (allSmiles === false && changePosition === false) {
       this.setState({ message: "Say Cheese!" });
     } else if (allSmiles === false && changePosition === true) {
-      this.setState({ messag: "Try moving your face into frame" });
+      this.setState({ message: "Try moving your face into frame" });
     }
     */
-    } catch (error) {
-      console.log(error);
-    }
   };
 
   renderRating = () => {
@@ -269,6 +276,7 @@ export default class Cam extends React.Component {
       currentWidth,
       picTaken,
       images,
+      showHelp,
     } = this.state;
 
     images.sort((a, b) => (a.value < b.value ? 1 : b.value < a.value ? -1 : 0));
@@ -293,6 +301,23 @@ export default class Cam extends React.Component {
           </Text>
         </SafeAreaView>
       );
+    } else if (showHelp) {
+      return (
+        <SafeAreaView>
+          <Info />
+
+          {/*
+            <TouchableOpacity
+              onPress={() => {
+                this.gotHelp();
+              }}
+              style={styles.icon2}
+            >
+              <EntypoIcon name="chevron-thin-right" size={50}></EntypoIcon>
+            </TouchableOpacity>
+            */}
+        </SafeAreaView>
+      );
     } else {
       if (!picTaken && images.length < 10) {
         return (
@@ -305,18 +330,13 @@ export default class Cam extends React.Component {
                 pictureSize="16:9"
                 flashMode={Camera.Constants.FlashMode.auto}
                 // autoFocus={Camera.Constants.AutoFocus.on}
-                onFacesDetected={
-                  this.state.ready ? this.handleFacesDetected : null
-                }
+                onFacesDetected={this.handleFacesDetected}
                 faceDetectorSettings={{
                   mode: FaceDetector.Constants.Mode.fast,
                   detectLandmarks: FaceDetector.Constants.Landmarks.all,
                   runClassifications:
-                    FaceDetector.Constants.Classifications.none,
+                    FaceDetector.Constants.Classifications.all,
                   tracking: true,
-                }}
-                onCameraReady={() => {
-                  this.setState({ ready: true });
                 }}
                 ref={(ref) => {
                   this.camera = ref;

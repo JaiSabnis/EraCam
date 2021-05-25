@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
-  AsyncStorage,
   ScrollView,
   StatusBar,
   Platform,
@@ -31,13 +30,11 @@ import { AntDesign } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import { EvilIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
-import { MaterialIcons } from "@expo/vector-icons";
 
 import { Camera } from "expo-camera";
 import * as Permissions from "expo-permissions";
 import * as MediaLibrary from "expo-media-library";
 import * as FaceDetector from "expo-face-detector";
-
 import Constants from "expo-constants";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -47,10 +44,9 @@ import { DeviceMotion } from "expo-sensors";
 const width = Dimensions.get("window").width;
 const deviceHeight = Dimensions.get("window").height;
 const height = width * (16 / 9);
-const topMargin = (deviceHeight - height) / 2;
-const shakeTolerance = 15;
+const topMargin = (deviceHeight * 0.8 - height) / 2;
 
-export default class Cam extends React.Component {
+export default class CameraView extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -63,9 +59,15 @@ export default class Cam extends React.Component {
       photo: "empty",
       picTaken: false,
       images: [],
-      shaky: false,
-      ready: false,
+      isClicked: false,
     };
+    /*
+    imageSort(){
+      return images.sort((a, b) =>
+      a.value < b.value ? 1 : b.value < a.value ? -1 : 0
+    );
+    }
+    */
   }
 
   async componentDidMount() {
@@ -80,36 +82,16 @@ export default class Cam extends React.Component {
       StatusBar.setBarStyle("light-content", true);
       StatusBar.setBackgroundColor("black");
     }
-
+    /*
     if (await DeviceMotion.isAvailableAsync()) {
       DeviceMotion.addListener((motionData) => {
-        var xShake =
-          -shakeTolerance > motionData.rotationRate.alpha ||
-          shakeTolerance < motionData.rotationRate.alpha;
-
-        var yShake =
-          -shakeTolerance > motionData.rotationRate.beta ||
-          shakeTolerance < motionData.rotationRate.beta;
-
-        var zShake =
-          -shakeTolerance > motionData.rotationRate.gamma ||
-          shakeTolerance < motionData.rotationRate.gamma;
-
-        if (xShake || yShake || zShake) {
-          this.setState({
-            shaky: true,
-          });
-        } else {
-          this.setState({
-            shaky: false,
-          });
-        }
+        console.log(motionData);
       });
     }
+    */
   }
 
   takePic = async () => {
-    var isShaky = this.state.shaky;
     var widthVal = this.state.currentWidth;
     this.camera
       .takePictureAsync({ quality: 0.4, skipProcessing: true })
@@ -120,26 +102,13 @@ export default class Cam extends React.Component {
           pic: data.uri,
           value: widthVal,
           isSaved: false,
-          shaky: isShaky,
+          isSelfie: this.state.type === Camera.Constants.Type.front,
         });
 
         this.setState({
           images: stateImages,
         });
       });
-  };
-
-  saveImage = async (uri) => {
-    const asset = MediaLibrary.createAssetAsync(uri);
-  };
-
-  shareImage = async (uri) => {
-    if (!(await Sharing.isAvailableAsync())) {
-      alert(`Uh oh, sharing isn't available on your platform`);
-      return;
-    }
-
-    await Sharing.shareAsync(uri);
   };
 
   flipCam = () => {
@@ -162,53 +131,68 @@ export default class Cam extends React.Component {
 
   displayMode = () => {
     if (this.state.images.length > 0) {
-      this.setState({ picTaken: true });
+      // this.setState({ picTaken: true });
+      this.props.navigation.navigate("ViewImage", {
+        images: this.state.images,
+      });
     }
   };
 
   handleFacesDetected = ({ faces }) => {
-    try {
-      var allSmiles = true;
-      var shutEye = false;
-      var changePosition = false;
+    var allSmiles = true;
+    var shutEye = false;
+    var changePosition = false;
 
-      // this.setState({ message: "" });
+    this.setState({ message: "" });
 
-      // ANGLES
-      var faceWidths = [];
-      // get faceWidths for different setups
-      for (let i = 0; i < faces.length; i++) {
-        let faceWidth =
-          faces[i].rightCheekPosition.x - faces[i].leftCheekPosition.x;
-        faceWidths.push(faceWidth);
+    // ANGLES
+    var faceWidths = [];
+    // get faceWidths for different setups
+    for (let i = 0; i < faces.length; i++) {
+      let faceWidth =
+        faces[i].rightCheekPosition.x - faces[i].leftCheekPosition.x;
+      faceWidths.push(faceWidth);
+    }
+
+    // calculations
+
+    var total = 0;
+    for (var i = 0; i < faceWidths.length; i++) {
+      total += faceWidths[i];
+    }
+
+    var avgWidthRound = total / faceWidths.length;
+    var avgWidth = Math.round(((600 + avgWidthRound) * 1) / 6);
+
+    if (Number.isNaN(avgWidth) || avgWidth < 0) {
+      avgWidth = 0;
+    } else if (avgWidth > 93) {
+      avgWidth = 93;
+      this.setState({
+        message: "Your Camera might be too far!",
+      });
+    }
+
+    if (0 < avgWidth <= 100) {
+      this.setState({
+        currentWidth: avgWidth,
+      });
+    }
+
+    for (let i = 0; i < faces.length; i++) {
+      if (
+        faces[i].rightEyeOpenProbability < 0.3 &&
+        faces[i].leftEyeOpenProbability < 0.3
+      ) {
+        shutEye = true;
       }
+    }
+    if (shutEye === false) {
+      this.setState({ message: "" });
+    } else {
+      this.setState({ message: "You might be blinking" });
+    }
 
-      // calculations
-
-      var total = 0;
-      for (var i = 0; i < faceWidths.length; i++) {
-        total += faceWidths[i];
-      }
-
-      var avgWidthRound = total / faceWidths.length;
-      var avgWidth = Math.round(((600 + avgWidthRound) * 1) / 6);
-
-      if (Number.isNaN(avgWidth) || avgWidth < 0) {
-        avgWidth = 0;
-      } else if (avgWidth > 93) {
-        avgWidth = 93;
-        this.setState({
-          message: "Your Camera might be too far!",
-        });
-      }
-
-      if (0 < avgWidth <= 100) {
-        this.setState({
-          currentWidth: avgWidth,
-        });
-      }
-
-      /*
     // FACE POSITION
     for (let i = 0; i < faces.length; i++) {
       //console.log(faces[i].leftEyePosition.x);
@@ -231,11 +215,7 @@ export default class Cam extends React.Component {
     } else if (allSmiles === false && changePosition === false) {
       this.setState({ message: "Say Cheese!" });
     } else if (allSmiles === false && changePosition === true) {
-      this.setState({ messag: "Try moving your face into frame" });
-    }
-    */
-    } catch (error) {
-      console.log(error);
+      this.setState({ message: "Try moving your face into frame" });
     }
   };
 
@@ -267,101 +247,82 @@ export default class Cam extends React.Component {
       hasMedia,
       message,
       currentWidth,
+      isClicked,
       picTaken,
       images,
     } = this.state;
 
-    images.sort((a, b) => (a.value < b.value ? 1 : b.value < a.value ? -1 : 0));
+    // images.sort((a, b) => (a.value < b.value ? 1 : b.value < a.value ? -1 : 0));
 
     if (hasPerm === null && hasMedia === null) {
       return <View />;
     } else if (hasPerm === false && hasMedia === false) {
       return (
-        <SafeAreaView style={styles.helpContainer}>
-          <View style={{ flexDirection: "column" }}>
-            <FontAwesome
-              name="camera-retro"
-              size={50}
-              color="white"
-              style={{ alignSelf: "center" }}
-            />
-            <Text style={styles.header}> Welcome to Era </Text>
-          </View>
-          <Text style={styles.subtitle}>
-            We need camera permissions! Please enable permissions for Era in
-            Settings.
-          </Text>
+        <SafeAreaView style={styles.whiteContainer}>
+          <Text> We need camera permissions to work our magic! </Text>
         </SafeAreaView>
       );
     } else {
-      if (!picTaken && images.length < 10) {
-        return (
-          <SafeAreaView style={styles.container}>
-            <TouchableOpacity onPress={() => this.takePic()}>
-              <Camera
-                style={styles.camera}
-                type={this.state.type}
-                ratio="16:9"
-                pictureSize="16:9"
-                flashMode={Camera.Constants.FlashMode.auto}
-                // autoFocus={Camera.Constants.AutoFocus.on}
-                onFacesDetected={
-                  this.state.ready ? this.handleFacesDetected : null
-                }
-                faceDetectorSettings={{
-                  mode: FaceDetector.Constants.Mode.fast,
-                  detectLandmarks: FaceDetector.Constants.Landmarks.all,
-                  runClassifications:
-                    FaceDetector.Constants.Classifications.none,
-                  tracking: true,
-                }}
-                onCameraReady={() => {
-                  this.setState({ ready: true });
-                }}
-                ref={(ref) => {
-                  this.camera = ref;
-                }}
-              >
-                <View>
-                  <View style={styles.colContainer}>
-                    <View style={styles.col}></View>
-                    <View style={styles.col}></View>
-                  </View>
-
-                  <View style={styles.row}></View>
-                  <View style={styles.row}></View>
+      return (
+        <SafeAreaView style={styles.container}>
+          <TouchableOpacity onPress={() => this.takePic()}>
+            <Camera
+              style={styles.camera}
+              type={this.state.type}
+              ratio="16:9"
+              pictureSize="16:9"
+              flashMode={Camera.Constants.FlashMode.auto}
+              autoFocus={Camera.Constants.AutoFocus.on}
+              onFacesDetected={this.handleFacesDetected}
+              faceDetectorSettings={{
+                mode: FaceDetector.Constants.Mode.fast,
+                detectLandmarks: FaceDetector.Constants.Landmarks.all,
+                runClassifications: FaceDetector.Constants.Classifications.all,
+                tracking: true,
+              }}
+              ref={(ref) => {
+                this.camera = ref;
+              }}
+            >
+              <View>
+                <View style={styles.colContainer}>
+                  <View style={styles.col}></View>
+                  <View style={styles.col}></View>
                 </View>
 
-                {message !== "" ? (
-                  <Badge style={styles.greyBadge}>
-                    <Text style={{ color: "white", fontSize: 20 }}>
-                      {message}
-                    </Text>
-                  </Badge>
-                ) : (
-                  <View></View>
-                )}
-              </Camera>
+                <View style={styles.row}></View>
+                <View style={styles.row}></View>
+              </View>
+
+              {message !== "" ? (
+                <Badge style={styles.greyBadge}>
+                  <Text style={{ color: "white", fontSize: 20 }}>
+                    {message}
+                  </Text>
+                </Badge>
+              ) : (
+                <View></View>
+              )}
+
+              {isClicked ? <View style={styles.overlay}></View> : <View />}
+            </Camera>
+          </TouchableOpacity>
+
+          {this.renderRating()}
+
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.btn} onPress={() => this.flipCam()}>
+              <Ionicons name="ios-reverse-camera" size={35} color="white" />
             </TouchableOpacity>
 
-            {this.renderRating()}
+            <TouchableOpacity style={styles.info}>
+              <Badge style={styles.infoBadge}>
+                <AntDesign name="infocirlceo" size={20} color="white" />
+                <Text style={{ color: "white" }}> Tap Screen to Click</Text>
+              </Badge>
+            </TouchableOpacity>
 
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={styles.btn}
-                onPress={() => this.flipCam()}
-              >
-                <Ionicons name="ios-reverse-camera" size={35} color="white" />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.info}>
-                <Badge style={styles.infoBadge}>
-                  <AntDesign name="infocirlceo" size={20} color="white" />
-                  <Text style={{ color: "white" }}> Tap Screen to Click</Text>
-                </Badge>
-              </TouchableOpacity>
-
-              {/*
+            {/*
               <TouchableOpacity
                 style={styles.btn}
                 onPress={() => this.takePic()}
@@ -370,120 +331,32 @@ export default class Cam extends React.Component {
               </TouchableOpacity>
 */}
 
-              {images.length > 0 ? (
-                <TouchableOpacity
-                  style={styles.btn}
-                  onPress={() => this.displayMode()}
-                >
-                  <EvilIcons name="check" size={40} color="orange" />
-                  <Text style={{ color: "white" }}>
-                    {" "}
-                    {this.state.images.length}{" "}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.btn}
-                  onPress={() => this.displayMode()}
-                >
-                  <Text style={{ color: "white" }}>
-                    {" "}
-                    {this.state.images.length}{" "}
-                  </Text>
-                  <EvilIcons name="check" size={40} color="grey" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </SafeAreaView>
-        );
-      } else {
-        return (
-          <SafeAreaView style={styles.whiteContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                this.setState({ images: [], picTaken: false });
-              }}
-            >
-              <Badge style={styles.blueHeaderBadge}>
-                <AntDesign name="leftcircleo" size={23} color="black" />
-                <Text style={{ color: "black" }}>
-                  {"  "}
-                  Back to Camera{" "}
+            {images.length > 0 ? (
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={() => this.displayMode()}
+              >
+                <EvilIcons name="check" size={40} color="orange" />
+                <Text style={{ color: "white" }}>
+                  {" "}
+                  {this.state.images.length}{" "}
                 </Text>
-              </Badge>
-            </TouchableOpacity>
-
-            <ScrollView>
-              {images.map((item, index) => {
-                return (
-                  <Card key={index}>
-                    <CardItem cardBody>
-                      <Image source={{ uri: item.pic }} style={styles.image} />
-                    </CardItem>
-                    <CardItem>
-                      <Left>
-                        {item.isSaved ? (
-                          <View>
-                            <Entypo name="heart" size={40} color="red" />
-                            <Text style={{ alignSelf: "center" }}>
-                              Saved in Gallery
-                            </Text>
-                          </View>
-                        ) : (
-                          <TouchableOpacity
-                            onPress={() => {
-                              this.saveImage(item.pic);
-                              var imagesArray = this.state.images;
-                              // var index = imagesArray.indexOf()
-                              // let index = markers.findIndex(el => el.name === 'name');
-                              // imagesArray.splice(index, 1);
-                              imagesArray[index] = {
-                                pic: item.pic,
-                                value: item.value,
-                                isSaved: true,
-                              };
-                              this.setState({ images: imagesArray });
-                            }}
-                          >
-                            <Entypo
-                              name="heart-outlined"
-                              size={40}
-                              color="red"
-                            />
-                            <Text style={{ alignSelf: "center" }}>Save</Text>
-                          </TouchableOpacity>
-                        )}
-                      </Left>
-                      <Body>
-                        <TouchableOpacity
-                          onPress={() => {
-                            this.shareImage(item.pic);
-                          }}
-                        >
-                          <EvilIcons
-                            name="share-apple"
-                            size={45}
-                            color="green"
-                          />
-                          <Text>Share</Text>
-                        </TouchableOpacity>
-                      </Body>
-                      <Right>
-                        <Text>Angle Quality: {item.value}</Text>
-                        {item.shaky ? (
-                          <Text style={{ color: "red" }}>SHAKY</Text>
-                        ) : (
-                          <View />
-                        )}
-                      </Right>
-                    </CardItem>
-                  </Card>
-                );
-              })}
-            </ScrollView>
-          </SafeAreaView>
-        );
-      }
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={() => this.displayMode()}
+              >
+                <Text style={{ color: "white" }}>
+                  {" "}
+                  {this.state.images.length}{" "}
+                </Text>
+                <EvilIcons name="check" size={40} color="grey" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </SafeAreaView>
+      );
     }
   }
 }
@@ -492,11 +365,6 @@ const styles = StyleSheet.create({
   image: {
     width: width,
     height: height,
-  },
-  helpContainer: {
-    backgroundColor: "#644EE2",
-    flex: 1,
-    marginTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
   },
   circle: {
     width: 500,
@@ -509,18 +377,16 @@ const styles = StyleSheet.create({
   },
   header: {
     fontWeight: "bold",
-    fontSize: 50,
-    color: "white",
-    marginTop: 35,
+    fontSize: 30,
+    color: "orange",
+    marginTop: 10,
+    marginBottom: 40,
   },
   subtitle: {
-    fontSize: 28,
-    alignSelf: "center",
-    color: "white",
-    alignContent: "center",
-    width: width * 0.9,
-    marginTop: 70,
-    marginBottom: 20,
+    fontWeight: "bold",
+    fontSize: 20,
+    color: "darkgrey",
+    marginBottom: 50,
   },
   angleRatingPo: {
     color: "white",
@@ -538,15 +404,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
     height: height * 0.1,
     width: height * 0.1,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "column",
-  },
-  greenHelpBadge: {
-    backgroundColor: "rgba(50,205,50, 0.5)",
-    alignSelf: "center",
-    height: height * 0.2,
-    width: height * 0.2,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "column",
@@ -825,19 +682,3 @@ const styles = StyleSheet.create({
           stateImages.push({ pic: data.uri, value: widthVal, isSaved: false });
         }
         */
-
-/*
-import { createAppContainer, createSwitchNavigator } from "react-navigation";
-import { createStackNavigator } from "react-navigation-stack";
-
-import CameraView from "./screens/CameraView";
-import ViewImage from "./screens/ViewImage";
-
-const nav = createSwitchNavigator({
-  CameraView: { screen: CameraView },
-  ViewImage: { screen: ViewImage },
-});
-
-const App = createAppContainer(nav);
-export default App;
-*/
